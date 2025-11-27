@@ -9,21 +9,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const app = express();
 app.use(cors()); 
 app.use(express.json());
-const path = require('path'); 
 
-app.use(express.static(__dirname));
-
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-app.get('/cadastro', (req, res) => {
-  res.sendFile(path.join(__dirname, 'cadastro.html'));
-});
-
-app.get('/dashboard', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dashboard.html'));
-});
 
 // --- CONEXÃO COM MONGODB ATLAS ---
 const MONGO_URI = "mongodb+srv://estudagenio_user:MBKjMNrMBT8R7@futurefast.ezadffc.mongodb.net/?appName=FutureFast";
