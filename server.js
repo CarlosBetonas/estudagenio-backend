@@ -11,32 +11,27 @@ app.use(cors());
 app.use(express.json());
 
 
-// --- CONEXÃO COM MONGODB ATLAS ---
 const MONGO_URI = "mongodb+srv://estudagenio_user:MBKjMNrMBT8R7@futurefast.ezadffc.mongodb.net/?appName=FutureFast";
 
 mongoose.connect(MONGO_URI)
     .then(() => console.log('MongoDB Conectado!'))
     .catch(err => console.log('Erro ao conectar Mongo:', err));
 
-// --- MODELOS ---
 
-// 1. Histórico
 const HistorySchema = new mongoose.Schema({
     userId: { type: String, required: true },
-    title: String,          // Ex: "Simulado Geral"
-    date: String,           // Ex: "27/11/2025"
-    score: String,          // Ex: "8/10" (Visual)
+    title: String,          
+    date: String,           
+    score: String,          
     
-    // --- NOVOS CAMPOS PARA O DASHBOARD ---
-    totalQuestions: { type: Number, default: 0 }, // Total de questões feitas
-    correctCount: { type: Number, default: 0 },   // Total de acertos
-    timeSpentSeconds: { type: Number, default: 0 }, // Tempo gasto em segundos
+    totalQuestions: { type: Number, default: 0 }, 
+    correctCount: { type: Number, default: 0 },  
+    timeSpentSeconds: { type: Number, default: 0 }, 
     
-    // Detalhamento por matéria (Crucial para o gráfico)
     subjectsBreakdown: [{
-        subject: String, // Ex: "Matemática"
-        total: Number,   // Quantas questões dessa matéria
-        correct: Number  // Quantas acertou
+        subject: String, 
+        total: Number,   
+        correct: Number  
     }],
     // -------------------------------------
     
@@ -44,7 +39,6 @@ const HistorySchema = new mongoose.Schema({
 });
 const History = mongoose.model('History', HistorySchema);
 
-// 2. Fórum
 const ReplySchema = new mongoose.Schema({
     author: String,
     content: String,
@@ -60,7 +54,6 @@ const TopicSchema = new mongoose.Schema({
 });
 const Topic = mongoose.model('Topic', TopicSchema);
 
-// 3. Questões (NOVO)
 const QuestionSchema = new mongoose.Schema({
     exam: String,
     subject: String,
@@ -72,7 +65,6 @@ const QuestionSchema = new mongoose.Schema({
 });
 const Question = mongoose.model('Question', QuestionSchema);
 
-// 4. Favoritos de Questões
 const FavoriteSchema = new mongoose.Schema({
     userId: { type: String, required: true },
     questionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Question', required: true },
@@ -81,7 +73,6 @@ const FavoriteSchema = new mongoose.Schema({
 const Favorite = mongoose.model('Favorite', FavoriteSchema);
 
 
-// --- ROTAS ---
 
 // 1. Registro
 app.post('/register', async (req, res) => {
@@ -173,7 +164,6 @@ app.get('/api/user/:id', async (req, res) => {
 // 6. Histórico
 app.post('/api/history', async (req, res) => {
     try {
-        // Recebe os novos dados do Front-end
         const { userId, title, date, score, totalQuestions, correctCount, timeSpentSeconds, subjectsBreakdown } = req.body;
         
         const newHistory = new History({ 
@@ -238,9 +228,8 @@ app.post('/api/forum/:id/reply', async (req, res) => {
     }
 });
 
-// 8. QUESTÕES (NOVO SISTEMA)
+// 8. QUESTÕES 
 
-// Buscar todas as questões (com filtros opcionais)
 app.get('/api/questions', async (req, res) => {
     try {
         const { theme, exam, difficulty } = req.query;
@@ -258,7 +247,6 @@ app.get('/api/questions', async (req, res) => {
 
 // 9. Favoritos de Questões
 
-// Listar favoritos de um usuário
 app.get('/api/favorites', async (req, res) => {
     try {
         const { userId } = req.query;
@@ -278,7 +266,6 @@ app.get('/api/favorites', async (req, res) => {
     }
 });
 
-// Adicionar aos favoritos
 app.post('/api/favorites', async (req, res) => {
     try {
         const { userId, questionId } = req.body;
@@ -298,7 +285,6 @@ app.post('/api/favorites', async (req, res) => {
     }
 });
 
-// Remover dos favoritos
 app.delete('/api/favorites', async (req, res) => {
     try {
         const { userId, questionId } = req.query;
@@ -314,13 +300,11 @@ app.delete('/api/favorites', async (req, res) => {
 });
 
 
-// Popular banco de dados (SEED) - Rota utilitária
 app.post('/api/questions/seed', async (req, res) => {
     try {
-        // DICA: Se quiser "resetar" e apagar as antigas para por as novas, descomente a linha abaixo:
         // await Question.deleteMany({}); 
 
-        // Só popula se estiver vazio para não duplicar (se não usou o deleteMany acima)
+
         const count = await Question.countDocuments();
         if (count > 0) return res.json({ msg: "Banco de questões já populado. (Se quiser atualizar, limpe o banco antes)" });
 
@@ -392,17 +376,13 @@ app.post('/api/chat', async (req, res) => {
             return res.status(500).json({ error: 'GEMINI_API_KEY não configurada.' });
         }
 
-        // 1. Inicializa o cliente do Google
         const genAI = new GoogleGenerativeAI(apiKey);
         
-        // 2. Escolhe o modelo (a biblioteca lida com a URL correta sozinha)
         const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-        // 3. Configura o prompt do sistema + pergunta do aluno
         const systemPrompt = "Aja como um tutor amigável e especialista chamado EstudaGênio. Explique de forma simples, passo a passo, focando em vestibulares brasileiros. Se fugir do tema, redirecione educadamente.";
         const fullPrompt = `${systemPrompt}\n\nPergunta do aluno: ${message}`;
 
-        // 4. Gera o conteúdo
         const result = await model.generateContent(fullPrompt);
         const response = await result.response;
         const text = response.text();
@@ -412,13 +392,11 @@ app.post('/api/chat', async (req, res) => {
 
     } catch (err) {
         console.error('Erro no Chatbot:', err);
-        // Se o erro for de API Key inválida ou bloqueio, vai aparecer aqui
         res.status(500).json({ error: 'Erro ao processar resposta da IA.' });
     }
 });
 
-// ROTA DO DASHBOARD (NOVA)
-// Calcula todas as estatísticas para a tela "Meu Desempenho"
+
 app.get('/api/analytics/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
@@ -428,14 +406,13 @@ app.get('/api/analytics/:userId', async (req, res) => {
             return res.json({ empty: true, msg: "Nenhum dado ainda." });
         }
 
-        // Variáveis para acumular os totais
+
         let totalSimulados = history.length;
         let totalQuestionsResolved = 0;
         let totalCorrect = 0;
         let totalTimeSeconds = 0;
         
-        // Objeto para somar desempenho por matéria
-        // Ex: { 'Matemática': { total: 10, correct: 5 }, 'Física': ... }
+
         let subjectStats = {};
 
         history.forEach(h => {
@@ -443,7 +420,6 @@ app.get('/api/analytics/:userId', async (req, res) => {
             totalCorrect += (h.correctCount || 0);
             totalTimeSeconds += (h.timeSpentSeconds || 0);
 
-            // Soma matéria por matéria
             if (h.subjectsBreakdown) {
                 h.subjectsBreakdown.forEach(item => {
                     if (!subjectStats[item.subject]) {
@@ -455,7 +431,6 @@ app.get('/api/analytics/:userId', async (req, res) => {
             }
         });
 
-        // Cálculos Finais
         const generalAccuracy = totalQuestionsResolved > 0 
             ? Math.round((totalCorrect / totalQuestionsResolved) * 100) 
             : 0;
@@ -464,12 +439,10 @@ app.get('/api/analytics/:userId', async (req, res) => {
             ? Math.round(totalTimeSeconds / totalQuestionsResolved) 
             : 0;
 
-        // Formata o tempo (ex: 135s -> "2:15")
         const minutes = Math.floor(avgTimePerQuestion / 60);
         const seconds = avgTimePerQuestion % 60;
         const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
-        // Prepara dados para o Gráfico
         const chartData = {
             labels: Object.keys(subjectStats),
             data: Object.keys(subjectStats).map(subj => {
@@ -478,7 +451,6 @@ app.get('/api/analytics/:userId', async (req, res) => {
             })
         };
 
-        // Identifica Pontos Fortes e Fracos para a IA
         let bestSubject = ''; 
         let worstSubject = '';
         let bestScore = -1;
@@ -490,7 +462,6 @@ app.get('/api/analytics/:userId', async (req, res) => {
             if (percentage < worstScore) { worstScore = percentage; worstSubject = subj; }
         });
 
-        // Retorna tudo mastigado para o Front-end
         res.json({
             cards: {
                 questionsResolved: totalQuestionsResolved,
